@@ -5,45 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-07-17
 
 ### Added
 
-- New `symmetry` argument to `Berny` for handling symmetric start geometries, whose exact symmetry a gradient optimizer cannot break — it may converge to a symmetric saddle rather than a minimum (issue #148). By default (`symmetry=None`) pyberny detects the point group and logs a warning when the start is symmetric; `symmetry='nowarn'` downgrades this to an info log; `symmetry='break'` displaces the start off its symmetry elements with a small, deterministic, symmetry-targeted kick (the equal-weight sum of the non-totally-symmetric Cartesian SALCs) so the optimizer can relax to the true minimum. Both detection and breaking use the `molsym` package; `berny.detect_point_group` and `berny.break_symmetry` are also exposed directly.
-- Support for NumPy 2.
-- Covalent radii for Ce–Yb, Po, At, and Fr–U from Cordero et al., *Dalton Trans.*, 2008, 2832, so that geometries containing these elements no longer crash `InternalCoords`.
-- New `berny.BernyParams` dataclass listing every tunable optimizer parameter; useful for discovery and type-checked construction.
-- `berny.solvers.MopacSolver` now accepts `charge` and `mult` keyword arguments so charged or open-shell systems no longer have to be patched in by hand.
-- `berny.solvers.XTBSolver`, a GFN-xTB backend (default GFN2-xTB) evaluated through the `tblite` library (shipped in the `benchmark` extra: `pip install pyberny[benchmark]`). It offers a smoother semiempirical potential-energy surface than PM7, which can be effectively discontinuous near flat minima.
-- Opt-in benchmark suite (`scripts/benchmark.py`) reproducing 19 of the 20 molecules from Birkholz & Schlegel, *Theor. Chem. Acc.* **135**, 84 (2016); PySCF runs are driven through PySCF's own `pyscf.geomopt.berny_solver` bridge.
-- Linear-bend internal coordinates via dummy ("ghost") atoms (issue #30). Near-linear triples `i-j-k` (angle > 175°) now place two mutually orthogonal dummy atoms perpendicular to the `i-k` axis and replace the singular `Angle(i,j,k)` with four well-behaved bends through ≈90°. This fixes optimization failures for molecules containing triple bonds (acetylenes, nitriles, CO₂) reported in issue #23. Dummy positions live in `InternalCoords.dummy_atoms` and are refreshed from the real-atom coordinates on every step; the `Geometry` yielded by `Berny` should be treated as immutable by callers. The optimizer additionally rebuilds the internal-coordinate set on the fly when an sp-like triple crosses the linear threshold mid-run (175° to enter, 170° to exit), so molecules that *become* linear during optimization (e.g. a bent CO₂ relaxing toward 180°) get the same dummy-atom treatment as molecules that start linear.
-- `Ghost`, `X`, and `Bq` species (and any name with a leading `-`) are now recognised as basis-function-only centres with zero covalent radius (issue #9). Geometries containing such atoms — common in PySCF/ASE workflows — no longer crash `InternalCoords`.
-- New `berny.tests` subpackage shipping reusable, optimizer-agnostic end-to-end tests built on analytic model potentials whose minima are known in closed form, so any optimizer (not just `Berny`) can install pyberny and check itself via `run_and_check(potential, minimize)`. The bundled `LinearBendCrossover` and `DihedralFromLinear` potentials exercise the linear-bend / dihedral coordinate handoff in both directions.
-- New `berny.benchmarks` subpackage shipping the Birkholz–Schlegel and Baker (Shajan-2023) benchmark sets — starting geometries plus `reference.json` metadata — directly inside the wheel, with a small discovery API (`BENCHMARKS`, `data_dir`, `load_reference`, `iter_molecules`) so downstream optimizers can drive themselves through the same standard sets that `scripts/benchmark.py` uses.
-- Additional `'oligomers'` benchmark exposed through the same `berny.benchmarks` discovery API (and `scripts/benchmark.py --benchmark oligomers`): length series of common oligomers — acenes, poly-ynes, PPE, polythiophene, oligo-peptides, and commodity polymers — proposed in issue #126. Unlike the other sets its geometries are not bundled in the wheel but come from the `external/oligomer-benchmarks` git submodule, so they require a source checkout with submodules initialised.
-- Interactive 3D viewer of the bundled benchmark molecules, published with the documentation, showing each starting geometry with atoms labelled by their 0-based index. A drop-down switches between the Birkholz & Schlegel, Baker, and oligomers sets.
-- PEP 561 `py.typed` marker — pyberny now ships type information, and the codebase is fully annotated and checked under `mypy --strict`.
+- `symmetry` argument to `Berny`: point-group detection and opt-in symmetry breaking of start geometries ([#162](https://github.com/pyberny/pyberny/pull/162))
+- `molsym` as a required dependency, backing the `symmetry` feature ([#162](https://github.com/pyberny/pyberny/pull/162), [#184](https://github.com/pyberny/pyberny/pull/184))
+- NumPy 2 support ([#43](https://github.com/pyberny/pyberny/pull/43))
+- Covalent radii for Ce–Yb, Po, At, and Fr–U ([#45](https://github.com/pyberny/pyberny/pull/45))
+- `berny.solvers.XTBSolver`, a GFN-xTB backend via `tblite` (default GFN2-xTB) ([#139](https://github.com/pyberny/pyberny/pull/139))
+- Linear-bend internal coordinates via dummy atoms ([#53](https://github.com/pyberny/pyberny/pull/53))
+- `Ghost`, `X`, and `Bq` basis-function-only centres ([#53](https://github.com/pyberny/pyberny/pull/53))
+- `berny.tests` subpackage of reusable, optimizer-agnostic end-to-end tests ([#101](https://github.com/pyberny/pyberny/pull/101))
+- Benchmark suite: `scripts/benchmark.py` runner and a `berny.benchmarks` subpackage bundling the Birkholz–Schlegel ([#55](https://github.com/pyberny/pyberny/pull/55)), Baker ([#84](https://github.com/pyberny/pyberny/pull/84)), and oligomer ([#127](https://github.com/pyberny/pyberny/pull/127)) sets with a discovery API ([#116](https://github.com/pyberny/pyberny/pull/116))
+- `energy_noise` optimizer parameter for noise-aware convergence ([#108](https://github.com/pyberny/pyberny/pull/108))
+- `trace` argument to `Berny` writing a structured per-step JSON trace ([#112](https://github.com/pyberny/pyberny/pull/112))
+- PEP 561 `py.typed` marker; fully typed under `mypy --strict` ([#119](https://github.com/pyberny/pyberny/pull/119))
 
 ### Changed
 
-- Minimum supported Python version raised to 3.10.
-- `berny.Math.FindrootException` renamed to `berny.Math.FindrootError`.
-- Dropped the runtime dependency on `setuptools` (`pkg_resources`).
-- Unknown keyword arguments to `Berny()` now raise `TypeError` instead of being silently absorbed.
-- Mid-run internal-coordinate rebuilds now preserve accumulated Hessian curvature for surviving coordinates instead of restarting entirely from a diagonal guess.
-- Linear-bend mid-run rebuild now also fires on near-linear angles at higher-coordination centres (not only sp-like ones); the singular angle is dropped rather than replaced by dummies and the dependent dihedrals are reconstructed against the straightened geometry. Fixes a class of estradiol / zn_edta optimization failures (pinv warnings, trust-radius crash) at a small step-count cost on cases where the offending angle was already stable. `mopac_pm7_steps` references updated for estradiol (11→27), azadirachtin (60→66), zn_edta (100→119), acanil01 (44→40), and mesityl_oxide (8→12) accordingly; benchmark MOPAC ceiling raised from 110 to 130 steps to accommodate zn_edta's longer trajectory.
-- `berny.solvers.MopacSolver` now reads MOPAC's `AUX` file instead of the human-readable `.out` file. The `.out` heat of formation is printed only to `1e-5 kcal/mol` (a ~1.6e-8 Ha grid); the `AUX` file carries the same energy and the gradients to 15 significant figures, lowering the solver's effective noise floor by ~1000× (to ~5e-12 Ha). With the noise gate no longer masked by print quantization, the benchmark's PM7-specific `energy_noise = 2e-7` override is dropped (default `2e-8`). Some PM7 trajectories shift accordingly: in the Birkholz–Schlegel set `raffinose` now converges (was a non-converger) while `azadirachtin` no longer converges within the step ceiling (its flat minimum locks onto the trust-region sphere once the noise floor drops); `mopac_pm7_steps` references regenerated for the affected molecules in both benchmark sets.
+- `berny.Math.FindrootException` renamed to `berny.Math.FindrootError` ([#42](https://github.com/pyberny/pyberny/pull/42))
+- Unknown keyword arguments to `Berny()` now raise `TypeError` ([#51](https://github.com/pyberny/pyberny/pull/51))
+- Mid-run coordinate rebuilds preserve accumulated Hessian curvature ([#122](https://github.com/pyberny/pyberny/pull/122))
+- Linear-bend rebuild also fires at higher-coordination centres ([#104](https://github.com/pyberny/pyberny/pull/104))
+- Repository and documentation moved to the `pyberny` GitHub organization ([#183](https://github.com/pyberny/pyberny/pull/183))
 
 ### Removed
 
-- `berny.solvers.MopacSolver`, the MOPAC backend. Use `berny.solvers.XTBSolver` (GFN2-xTB via the `tblite` library), now the default energy/gradient backend throughout the docs and benchmarks, instead.
-- The `"mopac"` geometry output format (`Geometry.dump(f, 'mopac')` / `Geometry.write('*.mopac')`).
-- The module-level `berny.berny.defaults` dict. Use `berny.BernyParams` (or pass overrides as keyword arguments to `Berny()`) instead.
+- Support for Python older than 3.10 ([#119](https://github.com/pyberny/pyberny/pull/119))
+- The runtime `setuptools` (`pkg_resources`) dependency ([#42](https://github.com/pyberny/pyberny/pull/42))
+- `berny.solvers.MopacSolver` and the `"mopac"` geometry output format (use `XTBSolver`) ([#142](https://github.com/pyberny/pyberny/pull/142))
+- The module-level `berny.berny.defaults` dict; pass overrides as `Berny()` keyword arguments instead ([#51](https://github.com/pyberny/pyberny/pull/51))
 
 ### Fixed
 
-- `get_property` now raises a clear `KeyError` identifying the species and property when the requested datum is missing, instead of letting the call fail later with an opaque numpy error.
-- Lookup of species data by atomic number (rather than symbol) now works correctly.
+- `get_property` raises a clear `KeyError` for missing species data ([#45](https://github.com/pyberny/pyberny/pull/45))
+- Species lookup by atomic number ([#45](https://github.com/pyberny/pyberny/pull/45))
 
 ## [0.6.3] - 2021-02-22
 
@@ -51,5 +48,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CLI
 
-[unreleased]: https://github.com/pyberny/pyberny/compare/0.6.3...HEAD
+[0.7.0]: https://github.com/pyberny/pyberny/compare/0.6.3...0.7.0
 [0.6.3]: https://github.com/pyberny/pyberny/releases/tag/0.6.3
